@@ -128,6 +128,38 @@ class BTreeTest {
         }
 
         @Test
+        void works_as_expected_when_inserting_many_small_keys() {
+            var btree = testBtree();
+            var keyMap = Stream.generate(() -> Pair.of(ByteBuffer.wrap(randomBytes(1)), randomBytes(1)))
+                    .limit(1000)
+                    .collect(Collectors.toMap(Pair::first, Pair::second, (a, b) -> a));
+
+            keyMap.forEach((key, value) -> btree.upsert(key.array(), value));
+
+            keyMap.forEach((key, value) -> {
+                var result = btree.find(key.array());
+                assertTrue(result.isPresent());
+                assertArrayEquals(value, result.get());
+            });
+        }
+
+        @Test
+        void works_as_expected_when_inserting_many_big_keys() {
+            var btree = testBtree();
+            var keyMap = Stream.generate(() -> Pair.of(ByteBuffer.wrap(randomBytes(1000)), randomBytes(3000)))
+                    .limit(1000)
+                    .collect(Collectors.toMap(Pair::first, Pair::second, (a, b) -> a));
+
+            keyMap.forEach((key, value) -> btree.upsert(key.array(), value));
+
+            keyMap.forEach((key, value) -> {
+                var result = btree.find(key.array());
+                assertTrue(result.isPresent());
+                assertArrayEquals(value, result.get());
+            });
+        }
+
+        @Test
         void works_as_expected_when_updating_many_keys() {
             var btree = testBtree();
             var keyMap = Stream.generate(() -> Pair.of(ByteBuffer.wrap(randomBytes()), randomBytes()))
@@ -192,6 +224,30 @@ class BTreeTest {
                     .limit(1000)
                     .collect(Collectors.toSet());
             keySet.forEach(key -> btree.upsert(key.array(), randomBytes()));
+
+            keySet.forEach(key -> assertTrue(btree.delete(key.array())));
+            keySet.forEach(key -> assertTrue(btree.find(key.array()).isEmpty()));
+        }
+
+        @Test
+        void works_as_expected_when_deleting_many_small_keys() {
+            var btree = testBtree();
+            var keySet = Stream.generate(() -> ByteBuffer.wrap(randomBytes(1)))
+                    .limit(1000)
+                    .collect(Collectors.toSet());
+            keySet.forEach(key -> btree.upsert(key.array(), randomBytes(1)));
+
+            keySet.forEach(key -> assertTrue(btree.delete(key.array())));
+            keySet.forEach(key -> assertTrue(btree.find(key.array()).isEmpty()));
+        }
+
+        @Test
+        void works_as_expected_when_deleting_many_big_keys() {
+            var btree = testBtree();
+            var keySet = Stream.generate(() -> ByteBuffer.wrap(randomBytes(1000)))
+                    .limit(1000)
+                    .collect(Collectors.toSet());
+            keySet.forEach(key -> btree.upsert(key.array(), randomBytes(3000)));
 
             keySet.forEach(key -> assertTrue(btree.delete(key.array())));
             keySet.forEach(key -> assertTrue(btree.find(key.array()).isEmpty()));
