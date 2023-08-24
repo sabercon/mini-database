@@ -53,7 +53,8 @@ final class BTreeUtils {
 
     static BTreeNode upsertInLeaf(BTreeNode node, byte[] key, byte[] value) {
         Preconditions.checkArgument(node.type() == BTreeNodeType.LEAF);
-        Preconditions.checkArgument(key.length + value.length <= MAX_KV_SIZE);
+        Preconditions.checkArgument(key.length <= MAX_KEY_SIZE);
+        Preconditions.checkArgument(value.length <= MAX_VALUE_SIZE);
 
         var index = node.lookUp(key);
         var kv = Pair.of(key, value);

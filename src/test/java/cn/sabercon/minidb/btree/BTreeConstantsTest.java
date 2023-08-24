@@ -11,7 +11,7 @@ class BTreeConstantsTest {
     @Test
     @SuppressWarnings("ConstantValue")
     void max_single_key_node_size_should_not_exceed_page_size() {
-        var maxSingleKeyNodeSize = HEADER_SIZE + OFFSET_SIZE + LENGTH_SIZE + MAX_KV_SIZE;
+        var maxSingleKeyNodeSize = HEADER_SIZE + OFFSET_SIZE + LENGTH_SIZE + MAX_KEY_SIZE + MAX_VALUE_SIZE;
         assertTrue(maxSingleKeyNodeSize <= PAGE_SIZE);
     }
 }

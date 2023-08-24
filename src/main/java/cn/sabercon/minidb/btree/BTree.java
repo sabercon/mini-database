@@ -39,6 +39,7 @@ public class BTree {
     }
 
     private long createNode(BTreeNode node) {
+        assert node.bytes() <= PAGE_SIZE;
         return store.createPage(node.data());
     }
 
@@ -114,7 +115,9 @@ public class BTree {
         if (updatedRoot.type() == BTreeNodeType.INTERNAL && updatedRoot.keys() == 1) {
             setRoot(updatedRoot.getPointer(0));
         } else {
-            setRoot(updatedRoot);
+            var nodes = split(updatedRoot);
+            var newRoot = nodes.size() == 1 ? nodes.get(0) : createRoot(save(nodes));
+            setRoot(newRoot);
         }
         return true;
     }
@@ -147,7 +150,8 @@ public class BTree {
             assert index == 0;
             return Optional.of(updateInInternal(node, index));
         } else {
-            return Optional.of(updateInInternal(node, index, save(updatedKid)));
+            @SuppressWarnings("unchecked") Pair<byte[], Long>[] pointers = save(split(updatedKid)).toArray(Pair[]::new);
+            return Optional.of(updateInInternal(node, index, pointers));
         }
     }
 
