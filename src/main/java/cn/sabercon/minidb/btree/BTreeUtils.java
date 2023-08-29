@@ -1,7 +1,7 @@
 package cn.sabercon.minidb.btree;
 
-import cn.sabercon.minidb.base.Conversions;
-import cn.sabercon.minidb.base.Pair;
+import cn.sabercon.minidb.util.Conversions;
+import cn.sabercon.minidb.util.Pair;
 import com.google.common.base.Preconditions;
 
 import java.util.Arrays;
@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-import static cn.sabercon.minidb.base.PageNode.PAGE_SIZE;
+import static cn.sabercon.minidb.base.Page.BYTE_SIZE;
 import static cn.sabercon.minidb.btree.BTreeConstants.*;
 
 final class BTreeUtils {
@@ -19,8 +19,8 @@ final class BTreeUtils {
     }
 
     private static int bufferCapacity(int bytes) {
-        Preconditions.checkArgument(bytes <= 2 * PAGE_SIZE);
-        return bytes <= PAGE_SIZE ? PAGE_SIZE : 2 * PAGE_SIZE;
+        Preconditions.checkArgument(bytes <= 2 * BYTE_SIZE);
+        return bytes <= BYTE_SIZE ? BYTE_SIZE : 2 * BYTE_SIZE;
     }
 
     @SafeVarargs
@@ -92,29 +92,29 @@ final class BTreeUtils {
     }
 
     static BTreeNode createRoot(List<Pair<byte[], Long>> pointers) {
-        var root = BTreeNode.of(PAGE_SIZE, BTreeNodeType.INTERNAL, pointers.size());
+        var root = BTreeNode.of(BYTE_SIZE, BTreeNodeType.INTERNAL, pointers.size());
         root.appendPointers(0, pointers);
         return root;
     }
 
     static List<BTreeNode> split(BTreeNode node) {
-        Preconditions.checkArgument(node.bytes() + HEADER_SIZE <= 2 * PAGE_SIZE);
+        Preconditions.checkArgument(node.bytes() + HEADER_SIZE <= 2 * BYTE_SIZE);
 
-        if (node.bytes() <= PAGE_SIZE) {
+        if (node.bytes() <= BYTE_SIZE) {
             return List.of(node);
         }
 
         var nodes = split2(node);
         var left = nodes.first();
         var right = nodes.second();
-        assert right.bytes() <= PAGE_SIZE;
-        if (left.bytes() <= PAGE_SIZE) {
+        assert right.bytes() <= BYTE_SIZE;
+        if (left.bytes() <= BYTE_SIZE) {
             return List.of(left, right);
         }
 
         var leftNodes = split2(left);
-        assert leftNodes.first().bytes() <= PAGE_SIZE;
-        assert leftNodes.second().bytes() <= PAGE_SIZE;
+        assert leftNodes.first().bytes() <= BYTE_SIZE;
+        assert leftNodes.second().bytes() <= BYTE_SIZE;
         return List.of(leftNodes.first(), leftNodes.second(), right);
     }
 
@@ -126,7 +126,7 @@ final class BTreeUtils {
         var left = BTreeNode.of(bufferCapacity(leftBytes), node.type(), splitIndex);
         left.appendRange(0, node, 0, splitIndex);
 
-        var right = BTreeNode.of(PAGE_SIZE, node.type(), node.keys() - splitIndex);
+        var right = BTreeNode.of(BYTE_SIZE, node.type(), node.keys() - splitIndex);
         right.appendRange(0, node, splitIndex, node.keys());
 
         return Pair.of(left, right);
@@ -151,12 +151,12 @@ final class BTreeUtils {
 
     static BTreeNode merge(BTreeNode left, BTreeNode right) {
         Preconditions.checkArgument(left.type() == right.type());
-        Preconditions.checkArgument(left.bytes() + right.bytes() - HEADER_SIZE <= PAGE_SIZE);
+        Preconditions.checkArgument(left.bytes() + right.bytes() - HEADER_SIZE <= BYTE_SIZE);
 
-        var newNode = BTreeNode.of(PAGE_SIZE, left.type(), left.keys() + right.keys());
+        var newNode = BTreeNode.of(BYTE_SIZE, left.type(), left.keys() + right.keys());
         newNode.appendRange(0, left, 0, left.keys());
         newNode.appendRange(left.keys(), right, 0, right.keys());
-        assert newNode.bytes() <= PAGE_SIZE;
+        assert newNode.bytes() <= BYTE_SIZE;
         return newNode;
     }
 }

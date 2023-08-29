@@ -1,8 +1,8 @@
 package cn.sabercon.minidb.base;
 
-import java.nio.ByteBuffer;
+import java.lang.foreign.MemorySegment;
 
-public interface PageStore {
+public interface PageBuffer {
 
     /**
      * @return The point of the root page or zero if the tree is empty
@@ -17,15 +17,15 @@ public interface PageStore {
     /**
      * Dereferences a pointer.
      */
-    ByteBuffer getData(long pointer);
+    MemorySegment getPage(long pointer);
 
     /**
      * Allocates a new page.
      *
-     * @param data The data to be saved
+     * @param page The data to be saved
      * @return The pointer of the created page
      */
-    long createPage(ByteBuffer data);
+    long createPage(MemorySegment page);
 
     /**
      * Deletes a page.

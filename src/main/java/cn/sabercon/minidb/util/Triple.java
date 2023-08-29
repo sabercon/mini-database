@@ -1,4 +1,4 @@
-package cn.sabercon.minidb.base;
+package cn.sabercon.minidb.util;
 
 public record Triple<A, B, C>(A first, B second, C third) {
 

@@ -1,16 +1,16 @@
 package cn.sabercon.minidb;
 
-import cn.sabercon.minidb.base.PageStore;
+import cn.sabercon.minidb.base.PageBuffer;
 
-import java.nio.ByteBuffer;
+import java.lang.foreign.MemorySegment;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class TestPageStore implements PageStore {
+public class TestPageBuffer implements PageBuffer {
 
-    private final Map<Long, ByteBuffer> pages = new ConcurrentHashMap<>();
+    private final Map<Long, MemorySegment> pages = new ConcurrentHashMap<>();
 
     private final AtomicLong counter = new AtomicLong(1);
 
@@ -27,14 +27,14 @@ public class TestPageStore implements PageStore {
     }
 
     @Override
-    public ByteBuffer getData(long pointer) {
+    public MemorySegment getPage(long pointer) {
         return Objects.requireNonNull(pages.get(pointer));
     }
 
     @Override
-    public long createPage(ByteBuffer data) {
+    public long createPage(MemorySegment page) {
         var pointer = counter.getAndIncrement();
-        pages.put(pointer, data);
+        pages.put(pointer, page);
         return pointer;
     }
 

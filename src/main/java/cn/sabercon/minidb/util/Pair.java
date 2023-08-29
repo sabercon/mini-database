@@ -1,4 +1,4 @@
-package cn.sabercon.minidb.base;
+package cn.sabercon.minidb.util;
 
 public record Pair<A, B>(A first, B second) {
 

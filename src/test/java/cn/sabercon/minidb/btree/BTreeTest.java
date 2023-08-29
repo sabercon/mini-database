@@ -1,13 +1,11 @@
 package cn.sabercon.minidb.btree;
 
-import cn.sabercon.minidb.TestPageStore;
-import cn.sabercon.minidb.TestUtils;
-import cn.sabercon.minidb.base.Pair;
+import cn.sabercon.minidb.TestPageBuffer;
+import cn.sabercon.minidb.util.Pair;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
-import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -17,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class BTreeTest {
 
     private BTree testBtree() {
-        return new BTree(new TestPageStore());
+        return new BTree(new TestPageBuffer());
     }
 
     @Nested

@@ -1,29 +1,30 @@
 package cn.sabercon.minidb.btree;
 
-import cn.sabercon.minidb.base.Conversions;
-import cn.sabercon.minidb.base.PageNode;
-import cn.sabercon.minidb.base.Pair;
+import cn.sabercon.minidb.base.Page;
+import cn.sabercon.minidb.util.Conversions;
+import cn.sabercon.minidb.util.Pair;
 import com.google.common.base.Preconditions;
 
-import java.nio.ByteBuffer;
+import java.lang.foreign.MemorySegment;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
 import static cn.sabercon.minidb.btree.BTreeConstants.*;
 
-class BTreeNode extends PageNode {
+class BTreeNode extends Page {
 
-    private BTreeNode(ByteBuffer data) {
+    private BTreeNode(MemorySegment data) {
         super(data);
     }
 
-    static BTreeNode of(ByteBuffer data) {
+    static BTreeNode of(MemorySegment data) {
         return new BTreeNode(data);
     }
 
     static BTreeNode of(int capacity, BTreeNodeType type, int keys) {
-        var node = new BTreeNode(ByteBuffer.allocate(capacity));
+        var data = MemorySegment.ofArray(new byte[capacity]);
+        var node = new BTreeNode(data);
         node.putInt(0, type.value());
         node.putInt(NODE_TYPE_SIZE, keys);
         return node;

@@ -1,4 +1,4 @@
-package cn.sabercon.minidb.base;
+package cn.sabercon.minidb.util;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;

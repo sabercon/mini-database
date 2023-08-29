@@ -1,33 +1,33 @@
 package cn.sabercon.minidb.btree;
 
-import cn.sabercon.minidb.base.PageStore;
-import cn.sabercon.minidb.base.Pair;
-import cn.sabercon.minidb.base.Triple;
+import cn.sabercon.minidb.base.Page;
+import cn.sabercon.minidb.base.PageBuffer;
+import cn.sabercon.minidb.util.Pair;
+import cn.sabercon.minidb.util.Triple;
 import com.google.common.base.Preconditions;
 
 import java.util.List;
 import java.util.Optional;
 
-import static cn.sabercon.minidb.base.PageNode.PAGE_SIZE;
 import static cn.sabercon.minidb.btree.BTreeConstants.DEFAULT_ROOT_NODE;
 import static cn.sabercon.minidb.btree.BTreeConstants.HEADER_SIZE;
 import static cn.sabercon.minidb.btree.BTreeUtils.*;
 
 public class BTree {
 
-    private final PageStore store;
+    private final PageBuffer buffer;
 
-    public BTree(PageStore store) {
-        this.store = store;
+    public BTree(PageBuffer buffer) {
+        this.buffer = buffer;
     }
 
     private BTreeNode getRoot() {
-        var root = store.getRoot();
+        var root = buffer.getRoot();
         return root == 0 ? DEFAULT_ROOT_NODE : getNode(root);
     }
 
     private void setRoot(long pointer) {
-        store.setRoot(pointer);
+        buffer.setRoot(pointer);
     }
 
     private void setRoot(BTreeNode node) {
@@ -35,16 +35,16 @@ public class BTree {
     }
 
     private BTreeNode getNode(long pointer) {
-        return BTreeNode.of(store.getData(pointer));
+        return BTreeNode.of(buffer.getPage(pointer));
     }
 
     private long createNode(BTreeNode node) {
-        assert node.bytes() <= PAGE_SIZE;
-        return store.createPage(node.data());
+        assert node.bytes() <= Page.BYTE_SIZE;
+        return buffer.createPage(node.data());
     }
 
     private void deleteNode(long pointer) {
-        store.deletePage(pointer);
+        buffer.deletePage(pointer);
     }
 
     private Pair<byte[], Long> save(BTreeNode node) {
@@ -156,14 +156,14 @@ public class BTree {
     }
 
     private Optional<Triple<Integer, Long, BTreeNode>> mergeableSibling(BTreeNode parent, BTreeNode kid, int index) {
-        if (kid.bytes() > PAGE_SIZE / 4) {
+        if (kid.bytes() > Page.BYTE_SIZE / 4) {
             return Optional.empty();
         }
 
         if (index > 0) {
             var leftPointer = parent.getPointer(index - 1);
             var left = getNode(leftPointer);
-            if (left.bytes() + kid.bytes() - HEADER_SIZE <= PAGE_SIZE) {
+            if (left.bytes() + kid.bytes() - HEADER_SIZE <= Page.BYTE_SIZE) {
                 return Optional.of(Triple.of(index - 1, leftPointer, left));
             }
         }
@@ -171,7 +171,7 @@ public class BTree {
         if (index < parent.keys() - 1) {
             var rightPointer = parent.getPointer(index + 1);
             var right = getNode(rightPointer);
-            if (right.bytes() + kid.bytes() - HEADER_SIZE <= PAGE_SIZE) {
+            if (right.bytes() + kid.bytes() - HEADER_SIZE <= Page.BYTE_SIZE) {
                 return Optional.of(Triple.of(index + 1, rightPointer, right));
             }
         }
