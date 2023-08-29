@@ -39,7 +39,6 @@ public class BTree {
     }
 
     private long createNode(BTreeNode node) {
-        assert node.bytes() <= Page.BYTE_SIZE;
         return buffer.createPage(node.data());
     }
 

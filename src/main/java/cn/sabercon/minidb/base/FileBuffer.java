@@ -8,16 +8,14 @@ public interface FileBuffer {
         return new DefaultFileBuffer(path);
     }
 
-    MemorySegment get(long pointer, long byteSize);
+    long byteSize();
 
-    default MemorySegment get(long pointer) {
-        return get(pointer, Page.BYTE_SIZE);
-    }
+    MemorySegment get(long pointer, long byteSize);
 
     void set(long pointer, MemorySegment data, long byteSize);
 
     default void set(long pointer, MemorySegment data) {
-        set(pointer, data, Page.BYTE_SIZE);
+        set(pointer, data, data.byteSize());
     }
 
     void flush();

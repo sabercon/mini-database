@@ -18,7 +18,12 @@ public class DefaultFileBuffer implements FileBuffer {
 
     public DefaultFileBuffer(String path) {
         this.path = path;
-        this.buffer = mapFile(path, MIN_BYTE_SIZE);
+        this.buffer = mapFile(path, 0);
+    }
+
+    @Override
+    public long byteSize() {
+        return buffer.byteSize();
     }
 
     @Override
@@ -42,7 +47,7 @@ public class DefaultFileBuffer implements FileBuffer {
 
     private void extendBuffer(long capacity) {
         if (capacity > buffer.byteSize()) {
-            var size = bufferSize(capacity);
+            var size = Math.max(MIN_BYTE_SIZE, bufferSize(capacity));
             buffer = mapFile(path, size);
         }
     }
