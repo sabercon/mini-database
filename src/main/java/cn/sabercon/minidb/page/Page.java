@@ -1,4 +1,4 @@
-package cn.sabercon.minidb.base;
+package cn.sabercon.minidb.page;
 
 import java.lang.foreign.MemorySegment;
 
@@ -6,19 +6,14 @@ import static java.lang.foreign.ValueLayout.*;
 
 public abstract class Page {
 
-    /**
-     * The page size is defined to be 4K bytes.
-     */
-    public static final int BYTE_SIZE = 4 * 1024;
-
     protected final MemorySegment data;
-
-    public MemorySegment data() {
-        return data;
-    }
 
     protected Page(MemorySegment data) {
         this.data = data;
+    }
+
+    public MemorySegment data() {
+        return data;
     }
 
     protected byte[] getBytes(int index, int length) {

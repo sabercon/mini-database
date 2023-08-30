@@ -1,26 +1,26 @@
-package cn.sabercon.minidb.btree;
+package cn.sabercon.minidb.page;
 
-enum BTreeNodeType {
+public enum PageType {
 
-    INTERNAL(1),
-    LEAF(2),
+    BTREE_INTERNAL(1),
+    BTREE_LEAF(2),
     FREE_LIST(3),
     ;
 
     private final int value;
 
-    BTreeNodeType(int value) {
+    PageType(int value) {
         this.value = value;
     }
 
-    int value() {
+    public int value() {
         return value;
     }
 
-    static BTreeNodeType of(int value) {
+    public static PageType of(int value) {
         return switch (value) {
-            case 1 -> INTERNAL;
-            case 2 -> LEAF;
+            case 1 -> BTREE_INTERNAL;
+            case 2 -> BTREE_LEAF;
             case 3 -> FREE_LIST;
             default -> throw new IllegalArgumentException("Unknown node type: " + value);
         };

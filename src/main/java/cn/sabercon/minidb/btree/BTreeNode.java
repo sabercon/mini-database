@@ -1,6 +1,7 @@
 package cn.sabercon.minidb.btree;
 
-import cn.sabercon.minidb.base.Page;
+import cn.sabercon.minidb.page.Page;
+import cn.sabercon.minidb.page.PageType;
 import cn.sabercon.minidb.util.Conversions;
 import cn.sabercon.minidb.util.Pair;
 import com.google.common.base.Preconditions;
@@ -10,7 +11,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-import static cn.sabercon.minidb.btree.BTreeConstants.*;
+import static cn.sabercon.minidb.btree.BTreeConstants.LENGTH_SIZE;
+import static cn.sabercon.minidb.btree.BTreeConstants.OFFSET_SIZE;
+import static cn.sabercon.minidb.page.PageConstants.*;
 
 class BTreeNode extends Page {
 
@@ -22,24 +25,27 @@ class BTreeNode extends Page {
         return new BTreeNode(data);
     }
 
-    static BTreeNode of(int capacity, BTreeNodeType type, int keys) {
-        var data = MemorySegment.ofArray(new byte[capacity]);
-        var node = new BTreeNode(data);
+    static BTreeNode of(PageType type, int keys, int pageCount) {
+        Preconditions.checkArgument(type == PageType.BTREE_INTERNAL || type == PageType.BTREE_LEAF);
+        Preconditions.checkArgument(pageCount == 1 || pageCount == 2);
+
+        var data = MemorySegment.ofArray(new byte[PAGE_BYTE_SIZE * pageCount]);
+        var node = BTreeNode.of(data);
         node.putInt(0, type.value());
         node.putInt(NODE_TYPE_SIZE, keys);
         return node;
     }
 
-    BTreeNodeType type() {
-        return BTreeNodeType.of(getInt(0));
+    PageType type() {
+        return PageType.of(getInt(0));
     }
 
-    int keys() {
+    int items() {
         return getInt(NODE_TYPE_SIZE);
     }
 
-    int offsetPos(int index) {
-        Objects.checkIndex(index, keys());
+    private int offsetPos(int index) {
+        Objects.checkIndex(index, items());
         return HEADER_SIZE + OFFSET_SIZE * index;
     }
 
@@ -52,11 +58,11 @@ class BTreeNode extends Page {
     }
 
     private int kvStartPos(int index) {
-        return HEADER_SIZE + OFFSET_SIZE * keys() + getStartOffset(index);
+        return HEADER_SIZE + OFFSET_SIZE * items() + getStartOffset(index);
     }
 
     private int kvEndPos(int index) {
-        return HEADER_SIZE + OFFSET_SIZE * keys() + getEndOffset(index);
+        return HEADER_SIZE + OFFSET_SIZE * items() + getEndOffset(index);
     }
 
     byte[] getKey(int index) {
@@ -80,7 +86,7 @@ class BTreeNode extends Page {
     }
 
     void appendValue(int index, byte[] key, byte[] val) {
-        Objects.checkIndex(index, keys());
+        Objects.checkIndex(index, items());
 
         // Set offset
         var endOffset = getStartOffset(index) + LENGTH_SIZE + key.length + val.length;
@@ -112,8 +118,8 @@ class BTreeNode extends Page {
     }
 
     void appendRange(int index, BTreeNode src, int start, int end) {
-        Objects.checkFromToIndex(start, end, src.keys());
-        Preconditions.checkArgument(index + end - start <= keys());
+        Objects.checkFromToIndex(start, end, src.items());
+        Preconditions.checkArgument(index + end - start <= items());
 
         // Copies offsets
         var offsetDiff = getStartOffset(index) - src.getStartOffset(start);
@@ -134,7 +140,7 @@ class BTreeNode extends Page {
      * @return Node size in bytes
      */
     int bytes() {
-        return kvStartPos(keys());
+        return kvStartPos(items());
     }
 
     /**
@@ -145,7 +151,7 @@ class BTreeNode extends Page {
     int lookUp(byte[] key) {
         // binary search
         var lo = 0;
-        var hi = keys();
+        var hi = items();
         while (lo < hi - 1) {
             var mid = (lo + hi) / 2;
             var comparison = Arrays.compare(getKey(mid), key);

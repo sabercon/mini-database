@@ -8,7 +8,7 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SegmentScope;
 import java.nio.channels.FileChannel;
 
-public class DefaultFileBuffer implements FileBuffer {
+class DefaultFileBuffer implements FileBuffer {
 
     private static final int MIN_BYTE_SIZE = 8 * 1024 * 1024;
 
@@ -16,28 +16,26 @@ public class DefaultFileBuffer implements FileBuffer {
 
     private MemorySegment buffer;
 
-    public DefaultFileBuffer(String path) {
+    DefaultFileBuffer(String path) {
         this.path = path;
         this.buffer = mapFile(path, 0);
     }
 
     @Override
-    public long byteSize() {
-        return buffer.byteSize();
-    }
-
-    @Override
-    public MemorySegment get(long pointer, long byteSize) {
-        var offset = toOffset(pointer);
+    public MemorySegment get(long offset, long byteSize) {
         Preconditions.checkArgument(offset + byteSize <= buffer.byteSize());
         return buffer.asSlice(offset, byteSize);
     }
 
     @Override
-    public void set(long pointer, MemorySegment data, long byteSize) {
-        var offset = toOffset(pointer);
+    public void set(long offset, MemorySegment data, long byteSize) {
         extendBuffer(offset + byteSize);
         MemorySegment.copy(data, 0, buffer, offset, byteSize);
+    }
+
+    @Override
+    public long byteSize() {
+        return buffer.byteSize();
     }
 
     @Override
@@ -47,15 +45,15 @@ public class DefaultFileBuffer implements FileBuffer {
 
     private void extendBuffer(long capacity) {
         if (capacity > buffer.byteSize()) {
-            var size = Math.max(MIN_BYTE_SIZE, bufferSize(capacity));
-            buffer = mapFile(path, size);
+            var minCap = Math.max(MIN_BYTE_SIZE, capacity);
+            buffer = mapFile(path, minCap);
         }
     }
 
-    private static MemorySegment mapFile(String path, long capacity) {
+    private static MemorySegment mapFile(String path, long minCap) {
         try (var raf = new RandomAccessFile(path, "rw")) {
             var channel = raf.getChannel();
-            var size = bufferSize(Math.max(capacity, channel.size()));
+            var size = bufferSize(Math.max(minCap, channel.size()));
             return channel.map(FileChannel.MapMode.READ_WRITE, 0, size, SegmentScope.auto());
         } catch (IOException e) {
             throw new IllegalStateException(e);
@@ -66,11 +64,8 @@ public class DefaultFileBuffer implements FileBuffer {
      * Returns a power of two size for the given target capacity.
      */
     private static long bufferSize(long cap) {
+        if (cap < 2) return cap;
         long n = -1L >>> Long.numberOfLeadingZeros(cap - 1);
-        return (n < 0) ? 1 : n + 1;
-    }
-
-    private static long toOffset(long pointer) {
-        return Page.BYTE_SIZE * pointer;
+        return n + 1;
     }
 }

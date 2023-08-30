@@ -1,6 +1,7 @@
 package cn.sabercon.minidb.btree;
 
-import cn.sabercon.minidb.TestPageBuffer;
+import cn.sabercon.minidb.TestPageManager;
+import cn.sabercon.minidb.base.KeyValueDatabase;
 import cn.sabercon.minidb.util.Pair;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -14,8 +15,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class BTreeTest {
 
-    private BTree testBtree() {
-        return new BTree(new TestPageBuffer());
+    private KeyValueDatabase testBtree() {
+        return new BTree(new TestPageManager());
     }
 
     @Nested

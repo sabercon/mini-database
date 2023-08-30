@@ -8,15 +8,15 @@ public interface FileBuffer {
         return new DefaultFileBuffer(path);
     }
 
-    long byteSize();
-
-    MemorySegment get(long pointer, long byteSize);
+    MemorySegment get(long offset, long byteSize);
 
     void set(long pointer, MemorySegment data, long byteSize);
 
-    default void set(long pointer, MemorySegment data) {
-        set(pointer, data, data.byteSize());
+    default void set(long offset, MemorySegment data) {
+        set(offset, data, data.byteSize());
     }
+
+    long byteSize();
 
     void flush();
 }

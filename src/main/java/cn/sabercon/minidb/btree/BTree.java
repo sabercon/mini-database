@@ -1,7 +1,9 @@
 package cn.sabercon.minidb.btree;
 
-import cn.sabercon.minidb.base.Page;
-import cn.sabercon.minidb.base.PageBuffer;
+import cn.sabercon.minidb.base.FileBuffer;
+import cn.sabercon.minidb.base.KeyValueDatabase;
+import cn.sabercon.minidb.page.PageManager;
+import cn.sabercon.minidb.page.PageType;
 import cn.sabercon.minidb.util.Pair;
 import cn.sabercon.minidb.util.Triple;
 import com.google.common.base.Preconditions;
@@ -10,24 +12,34 @@ import java.util.List;
 import java.util.Optional;
 
 import static cn.sabercon.minidb.btree.BTreeConstants.DEFAULT_ROOT_NODE;
-import static cn.sabercon.minidb.btree.BTreeConstants.HEADER_SIZE;
 import static cn.sabercon.minidb.btree.BTreeUtils.*;
+import static cn.sabercon.minidb.page.PageConstants.*;
 
-public class BTree {
+public class BTree implements KeyValueDatabase {
 
-    private final PageBuffer buffer;
+    private final PageManager pageManager;
 
-    public BTree(PageBuffer buffer) {
-        this.buffer = buffer;
+    BTree(PageManager pageManager) {
+        this.pageManager = pageManager;
+    }
+
+    public static BTree from(String path) {
+        var buffer = FileBuffer.from(path);
+        return new BTree(PageManager.of(buffer));
     }
 
     private BTreeNode getRoot() {
-        var root = buffer.getRoot();
-        return root == 0 ? DEFAULT_ROOT_NODE : getNode(root);
+        var root = pageManager.getRoot();
+        return root == NULL_POINTER ? DEFAULT_ROOT_NODE : getNode(root);
     }
 
     private void setRoot(long pointer) {
-        buffer.setRoot(pointer);
+        var oldRoot = pageManager.getRoot();
+        if (oldRoot != NULL_POINTER && oldRoot != pointer) {
+            deleteNode(oldRoot);
+        }
+
+        pageManager.setRoot(pointer);
     }
 
     private void setRoot(BTreeNode node) {
@@ -35,19 +47,19 @@ public class BTree {
     }
 
     private BTreeNode getNode(long pointer) {
-        return BTreeNode.of(buffer.getPage(pointer));
-    }
-
-    private long createNode(BTreeNode node) {
-        return buffer.createPage(node.data());
+        return BTreeNode.of(pageManager.getPage(pointer));
     }
 
     private void deleteNode(long pointer) {
-        buffer.deletePage(pointer);
+        pageManager.deletePage(pointer);
+    }
+
+    private long createNode(BTreeNode node) {
+        return pageManager.createPage(node.data());
     }
 
     private Pair<byte[], Long> save(BTreeNode node) {
-        Preconditions.checkArgument(node.keys() > 0);
+        Preconditions.checkArgument(node.items() > 0);
         return Pair.of(node.getKey(0), createNode(node));
     }
 
@@ -55,17 +67,27 @@ public class BTree {
         return nodes.stream().map(this::save).toList();
     }
 
-    public Optional<byte[]> find(byte[] key) {
-        Preconditions.checkArgument(key.length > 0);
+    private void updateRoot(BTreeNode node) {
+        if (node.type() == PageType.BTREE_INTERNAL && node.items() == 1) {
+            setRoot(node.getPointer(0));
+        } else {
+            var nodes = split(node);
+            var newRoot = nodes.size() == 1 ? nodes.get(0) : createRoot(save(nodes));
+            setRoot(newRoot);
+        }
+    }
 
-        var root = getRoot();
-        return doFind(root, key);
+    @Override
+    public Optional<byte[]> find(byte[] key) {
+        checkKeySize(key);
+
+        return doFind(getRoot(), key);
     }
 
     private Optional<byte[]> doFind(BTreeNode node, byte[] key) {
         return switch (node.type()) {
-            case LEAF -> findInLeaf(node, key);
-            case INTERNAL -> findInInternal(node, key);
+            case BTREE_LEAF -> findInLeaf(node, key);
+            case BTREE_INTERNAL -> findInInternal(node, key);
             default -> throw new AssertionError();
         };
     }
@@ -76,21 +98,20 @@ public class BTree {
         return doFind(getNode(pointer), key);
     }
 
+    @Override
     public void upsert(byte[] key, byte[] value) {
-        Preconditions.checkArgument(key.length > 0);
+        checkKeySize(key);
+        checkValueSize(value);
 
         var root = getRoot();
         var updatedRoot = doUpsert(root, key, value);
-
-        var nodes = split(updatedRoot);
-        var newRoot = nodes.size() == 1 ? nodes.get(0) : createRoot(save(nodes));
-        setRoot(newRoot);
+        updateRoot(updatedRoot);
     }
 
     private BTreeNode doUpsert(BTreeNode node, byte[] key, byte[] value) {
         return switch (node.type()) {
-            case LEAF -> upsertInLeaf(node, key, value);
-            case INTERNAL -> upsertInInternal(node, key, value);
+            case BTREE_LEAF -> upsertInLeaf(node, key, value);
+            case BTREE_INTERNAL -> upsertInInternal(node, key, value);
             default -> throw new AssertionError();
         };
     }
@@ -99,32 +120,29 @@ public class BTree {
         var index = node.lookUp(key);
         var pointer = node.getPointer(index);
         var updatedKid = doUpsert(getNode(pointer), key, value);
+        deleteNode(pointer);
+
         @SuppressWarnings("unchecked") Pair<byte[], Long>[] pointers = save(split(updatedKid)).toArray(Pair[]::new);
         return updateInInternal(node, index, pointers);
     }
 
+    @Override
     public boolean delete(byte[] key) {
-        Preconditions.checkArgument(key.length > 0);
+        checkKeySize(key);
 
         var root = getRoot();
         var deletionResult = doDelete(root, key);
         if (deletionResult.isEmpty()) return false;
-        var updatedRoot = deletionResult.get();
 
-        if (updatedRoot.type() == BTreeNodeType.INTERNAL && updatedRoot.keys() == 1) {
-            setRoot(updatedRoot.getPointer(0));
-        } else {
-            var nodes = split(updatedRoot);
-            var newRoot = nodes.size() == 1 ? nodes.get(0) : createRoot(save(nodes));
-            setRoot(newRoot);
-        }
+        var updatedRoot = deletionResult.get();
+        updateRoot(updatedRoot);
         return true;
     }
 
     private Optional<BTreeNode> doDelete(BTreeNode node, byte[] key) {
         return switch (node.type()) {
-            case LEAF -> deleteInLeaf(node, key);
-            case INTERNAL -> deleteInInternal(node, key);
+            case BTREE_LEAF -> deleteInLeaf(node, key);
+            case BTREE_INTERNAL -> deleteInInternal(node, key);
             default -> throw new AssertionError();
         };
     }
@@ -135,6 +153,7 @@ public class BTree {
         var deletionResult = doDelete(getNode(pointer), key);
         if (deletionResult.isEmpty()) return Optional.empty();
         var updatedKid = deletionResult.get();
+        deleteNode(pointer);
 
         var mergeableResult = mergeableSibling(node, updatedKid, index);
         if (mergeableResult.isPresent()) {
@@ -142,10 +161,12 @@ public class BTree {
             var siblingIndex = sibling.first();
             var siblingPointer = sibling.second();
             var siblingNode = sibling.third();
+
             var merged = index > siblingIndex ? merge(siblingNode, updatedKid) : merge(updatedKid, siblingNode);
+            deleteNode(siblingPointer);
             return Optional.of(updateInInternal(node, Math.min(index, siblingIndex), 2, save(merged)));
-        } else if (updatedKid.keys() == 0) {
-            assert node.keys() == 1;
+        } else if (updatedKid.items() == 0) {
+            assert node.items() == 1;
             assert index == 0;
             return Optional.of(updateInInternal(node, index));
         } else {
@@ -155,23 +176,17 @@ public class BTree {
     }
 
     private Optional<Triple<Integer, Long, BTreeNode>> mergeableSibling(BTreeNode parent, BTreeNode kid, int index) {
-        if (kid.bytes() > Page.BYTE_SIZE / 4) {
+        if (kid.bytes() > PAGE_BYTE_SIZE / 4) {
             return Optional.empty();
         }
 
-        if (index > 0) {
-            var leftPointer = parent.getPointer(index - 1);
-            var left = getNode(leftPointer);
-            if (left.bytes() + kid.bytes() - HEADER_SIZE <= Page.BYTE_SIZE) {
-                return Optional.of(Triple.of(index - 1, leftPointer, left));
-            }
-        }
+        for (var siblingIndex : List.of(index - 1, index + 1)) {
+            if (siblingIndex < 0 || siblingIndex >= parent.items()) continue;
 
-        if (index < parent.keys() - 1) {
-            var rightPointer = parent.getPointer(index + 1);
-            var right = getNode(rightPointer);
-            if (right.bytes() + kid.bytes() - HEADER_SIZE <= Page.BYTE_SIZE) {
-                return Optional.of(Triple.of(index + 1, rightPointer, right));
+            var siblingPointer = parent.getPointer(siblingIndex);
+            var sibling = getNode(siblingPointer);
+            if (sibling.bytes() + kid.bytes() - HEADER_SIZE <= PAGE_BYTE_SIZE) {
+                return Optional.of(Triple.of(siblingIndex, siblingPointer, sibling));
             }
         }
 
