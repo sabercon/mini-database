@@ -35,7 +35,6 @@ class DefaultPageManager implements PageManager {
     @Override
     public void setRoot(long root) {
         master.setRoot(root);
-        flush();
     }
 
     @Override

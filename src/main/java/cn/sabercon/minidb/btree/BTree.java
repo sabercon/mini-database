@@ -33,17 +33,14 @@ public class BTree implements KeyValueDatabase {
         return root == NULL_POINTER ? DEFAULT_ROOT_NODE : getNode(root);
     }
 
-    private void setRoot(long pointer) {
+    private void setRoot(long root) {
         var oldRoot = pageManager.getRoot();
-        if (oldRoot != NULL_POINTER && oldRoot != pointer) {
+        if (oldRoot != NULL_POINTER && oldRoot != root) {
             deleteNode(oldRoot);
         }
 
-        pageManager.setRoot(pointer);
-    }
-
-    private void setRoot(BTreeNode node) {
-        setRoot(createNode(node));
+        pageManager.setRoot(root);
+        pageManager.flush();
     }
 
     private BTreeNode getNode(long pointer) {
@@ -55,6 +52,7 @@ public class BTree implements KeyValueDatabase {
     }
 
     private long createNode(BTreeNode node) {
+        Preconditions.checkArgument(node.items() > 0);
         return pageManager.createPage(node.data());
     }
 
@@ -73,7 +71,7 @@ public class BTree implements KeyValueDatabase {
         } else {
             var nodes = split(node);
             var newRoot = nodes.size() == 1 ? nodes.get(0) : createRoot(save(nodes));
-            setRoot(newRoot);
+            setRoot(createNode(newRoot));
         }
     }
 
@@ -103,8 +101,7 @@ public class BTree implements KeyValueDatabase {
         checkKeySize(key);
         checkValueSize(value);
 
-        var root = getRoot();
-        var updatedRoot = doUpsert(root, key, value);
+        var updatedRoot = doUpsert(getRoot(), key, value);
         updateRoot(updatedRoot);
     }
 
@@ -130,8 +127,7 @@ public class BTree implements KeyValueDatabase {
     public boolean delete(byte[] key) {
         checkKeySize(key);
 
-        var root = getRoot();
-        var deletionResult = doDelete(root, key);
+        var deletionResult = doDelete(getRoot(), key);
         if (deletionResult.isEmpty()) return false;
 
         var updatedRoot = deletionResult.get();
