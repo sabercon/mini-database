@@ -2,7 +2,6 @@ package cn.sabercon.minidb.page;
 
 import cn.sabercon.minidb.base.FileBuffer;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 
 import java.lang.foreign.MemorySegment;
 import java.util.*;
@@ -14,9 +13,9 @@ class DefaultPageManager implements PageManager {
 
     private final Map<Long, MemorySegment> updatedPages = new LinkedHashMap<>();
 
-    private final List<Long> freedPages = new ArrayList<>();
+    private final Queue<Long> freedPages = new LinkedList<>();
 
-    private final List<Long> freePages = new ArrayList<>();
+    private final Queue<Long> freePages = new LinkedList<>();
 
     private final FileBuffer buffer;
 
@@ -41,14 +40,14 @@ class DefaultPageManager implements PageManager {
     public MemorySegment getPage(long pointer) {
         Preconditions.checkArgument(pointer > 0 && pointer < master.getTotal());
 
-        return getUpdatedPage(pointer).orElseGet(() -> getSavedPage(pointer));
+        return getUpdatedPage(pointer).orElseGet(() -> getSyncedPage(pointer));
     }
 
     private Optional<MemorySegment> getUpdatedPage(long pointer) {
         return Optional.ofNullable(updatedPages.get(pointer));
     }
 
-    private MemorySegment getSavedPage(long pointer) {
+    private MemorySegment getSyncedPage(long pointer) {
         return buffer.get(toOffset(pointer), PAGE_BYTE_SIZE);
     }
 
@@ -74,7 +73,7 @@ class DefaultPageManager implements PageManager {
 
     private Optional<Long> allocateFreePage() {
         if (!freePages.isEmpty()) {
-            return Optional.of(freePages.remove(freePages.size() - 1));
+            return Optional.of(freePages.remove());
         }
         var freeListHead = master.getFreeListHead();
         if (freeListHead == NULL_POINTER) {
@@ -102,8 +101,7 @@ class DefaultPageManager implements PageManager {
 
     @Override
     public void flush() {
-        syncFreedPages();
-        syncFreePages();
+        syncFreeList();
         syncUpdatedPages();
         buffer.flush();
 
@@ -111,39 +109,36 @@ class DefaultPageManager implements PageManager {
         buffer.flush();
     }
 
-    private void syncFreedPages() {
-        if (freedPages.isEmpty()) return;
+    private void syncFreeList() {
+        if (freedPages.isEmpty() && freePages.isEmpty()) return;
 
-        for (var freed : Lists.partition(freedPages, FreeListNode.CAPACITY)) {
-            var pointer = allocatePage();
-            var freedGroup = new ArrayList<>(freed);
-            while (freedGroup.size() < FreeListNode.CAPACITY && !freePages.isEmpty()) {
-                freedGroup.add(freePages.remove(freePages.size() - 1));
-            }
-            createFreeListHead(pointer, freedGroup);
-        }
-
-        freedPages.clear();
-    }
-
-    private void syncFreePages() {
-        if (freePages.isEmpty()) return;
-
-        var pointer = freePages.remove(freePages.size() - 1);
-        createFreeListHead(pointer, freePages);
-
-        freePages.clear();
-    }
-
-    private void createFreeListHead(long pointer, List<Long> freePages) {
-        var node = FreeListNode.of(master.getFreeListHead(), freePages);
+        var pointer = allocatePage();
+        var freeablePages = findFreeablePages();
+        var node = FreeListNode.of(master.getFreeListHead(), freeablePages);
         updatedPages.put(pointer, node.data());
         master.setFreeListHead(pointer);
+
+        syncFreeList();
+    }
+
+    private List<Long> findFreeablePages() {
+        var size = Math.min(FreeListNode.CAPACITY, freedPages.size() + freePages.size());
+        var freeablePages = new ArrayList<Long>(size);
+
+        while (freeablePages.size() < size) {
+            if (!freedPages.isEmpty()) {
+                freeablePages.add(freedPages.remove());
+            } else {
+                freeablePages.add(freePages.remove());
+            }
+        }
+        return freeablePages;
     }
 
     private void syncUpdatedPages() {
-        updatedPages.forEach((pointer, page) -> buffer.set(toOffset(pointer), page));
+        var updatablePages = Map.copyOf(updatedPages);
         updatedPages.clear();
+        updatablePages.forEach((pointer, page) -> buffer.set(toOffset(pointer), page));
     }
 
     private void syncMaster() {
