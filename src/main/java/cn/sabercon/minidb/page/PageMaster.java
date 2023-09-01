@@ -8,6 +8,7 @@ import java.lang.foreign.MemorySegment;
 import static cn.sabercon.minidb.page.PageConstants.NULL_POINTER;
 import static cn.sabercon.minidb.page.PageConstants.POINTER_SIZE;
 import static java.lang.foreign.ValueLayout.JAVA_LONG;
+import static java.lang.foreign.ValueLayout.JAVA_LONG_UNALIGNED;
 
 class PageMaster {
 
@@ -36,18 +37,18 @@ class PageMaster {
         Preconditions.checkArgument(SIGNATURE.mismatch(data.asSlice(0, SIGNATURE.byteSize())) < 0);
 
         var master = new PageMaster();
-        master.setTotal(data.get(JAVA_LONG, SIGNATURE.byteSize()));
-        master.setRoot(data.get(JAVA_LONG, SIGNATURE.byteSize() + POINTER_SIZE));
-        master.setFreeListHead(data.get(JAVA_LONG, SIGNATURE.byteSize() + 2 * POINTER_SIZE));
+        master.setTotal(data.get(JAVA_LONG_UNALIGNED, SIGNATURE.byteSize()));
+        master.setRoot(data.get(JAVA_LONG_UNALIGNED, SIGNATURE.byteSize() + POINTER_SIZE));
+        master.setFreeListHead(data.get(JAVA_LONG_UNALIGNED, SIGNATURE.byteSize() + 2 * POINTER_SIZE));
         return master;
     }
 
     MemorySegment data() {
         var data = MemorySegment.ofArray(new byte[TOTAL_SIZE]);
         data.copyFrom(SIGNATURE);
-        data.set(JAVA_LONG, SIGNATURE.byteSize(), total);
-        data.set(JAVA_LONG, SIGNATURE.byteSize() + POINTER_SIZE, root);
-        data.set(JAVA_LONG, SIGNATURE.byteSize() + 2 * POINTER_SIZE, freeListHead);
+        data.set(JAVA_LONG_UNALIGNED, SIGNATURE.byteSize(), total);
+        data.set(JAVA_LONG_UNALIGNED, SIGNATURE.byteSize() + POINTER_SIZE, root);
+        data.set(JAVA_LONG_UNALIGNED, SIGNATURE.byteSize() + 2 * POINTER_SIZE, freeListHead);
         return data;
     }
 
