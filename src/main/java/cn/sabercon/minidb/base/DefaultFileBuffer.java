@@ -10,7 +10,7 @@ import java.nio.channels.FileChannel;
 
 class DefaultFileBuffer implements FileBuffer {
 
-    private static final int MIN_BYTE_SIZE = 8 * 1024 * 1024;
+    static final int MIN_BYTE_SIZE = 8 * 1024 * 1024;
 
     private final String path;
 

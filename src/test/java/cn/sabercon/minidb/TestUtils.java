@@ -21,4 +21,12 @@ public final class TestUtils {
     public static byte[] randomBytes() {
         return randomBytes(1, 1000);
     }
+
+    public static int randomInt(int min, int max) {
+        return ThreadLocalRandom.current().nextInt(min, max + 1);
+    }
+
+    public static long randomLong(long min, long max) {
+        return ThreadLocalRandom.current().nextLong(min, max + 1);
+    }
 }
