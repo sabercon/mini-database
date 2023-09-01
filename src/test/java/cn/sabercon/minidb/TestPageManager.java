@@ -34,7 +34,7 @@ public class TestPageManager implements PageManager {
 
     @Override
     public void deletePage(long pointer) {
-        pages.remove(pointer);
+        Objects.requireNonNull(pages.remove(pointer));
     }
 
     @Override

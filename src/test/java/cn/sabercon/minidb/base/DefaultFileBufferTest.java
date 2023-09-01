@@ -8,8 +8,7 @@ import java.lang.foreign.MemorySegment;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static cn.sabercon.minidb.TestUtils.randomBytes;
-import static cn.sabercon.minidb.TestUtils.randomLong;
+import static cn.sabercon.minidb.TestUtils.*;
 import static cn.sabercon.minidb.base.DefaultFileBuffer.MIN_BYTE_SIZE;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -49,7 +48,7 @@ class DefaultFileBufferTest {
             var data = MemorySegment.ofArray(randomBytes(4096));
             buffer.set(index, data);
 
-            assertEquals(-1, buffer.get(index, 4096).mismatch(data));
+            assertSegmentEquals(data, buffer.get(index, 4096));
         }
 
         @RepeatedTest(10)
@@ -58,7 +57,7 @@ class DefaultFileBufferTest {
             var data = MemorySegment.ofArray(randomBytes(4096));
             buffer.set(index, data);
 
-            assertEquals(-1, buffer.get(index, 2048).mismatch(data.asSlice(0, 2048)));
+            assertSegmentEquals(data.asSlice(0, 2048), buffer.get(index, 2048));
         }
     }
 
@@ -71,7 +70,7 @@ class DefaultFileBufferTest {
             var data = MemorySegment.ofArray(randomBytes(4096));
             buffer.set(index, data);
 
-            assertEquals(-1, buffer.get(index, data.byteSize()).mismatch(data));
+            assertSegmentEquals(data, buffer.get(index, data.byteSize()));
         }
 
         @ParameterizedTest
@@ -82,7 +81,7 @@ class DefaultFileBufferTest {
             buffer.set(index, data1);
             buffer.set(index, data2);
 
-            assertEquals(-1, buffer.get(index, data2.byteSize()).mismatch(data2));
+            assertSegmentEquals(data2, buffer.get(index, data2.byteSize()));
         }
     }
 

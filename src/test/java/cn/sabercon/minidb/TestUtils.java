@@ -1,5 +1,8 @@
 package cn.sabercon.minidb;
 
+import org.junit.jupiter.api.Assertions;
+
+import java.lang.foreign.MemorySegment;
 import java.util.concurrent.ThreadLocalRandom;
 
 public final class TestUtils {
@@ -28,5 +31,9 @@ public final class TestUtils {
 
     public static long randomLong(long min, long max) {
         return ThreadLocalRandom.current().nextLong(min, max + 1);
+    }
+
+    public static void assertSegmentEquals(MemorySegment expected, MemorySegment actual) {
+        Assertions.assertEquals(-1, expected.mismatch(actual));
     }
 }
