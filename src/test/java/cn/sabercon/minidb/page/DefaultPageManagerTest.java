@@ -6,11 +6,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.lang.foreign.MemorySegment;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -26,14 +26,14 @@ class DefaultPageManagerTest {
     PageManager manager;
 
     @BeforeEach
-    void setUp() throws Exception {
-        manager = PageManager.of(FileBuffer.from("test.minidb"));
+    void setUp(@TempDir Path tempDir) {
+        var buffer = FileBuffer.from(tempDir.resolve("test.minidb"));
+        manager = PageManager.of(buffer);
     }
 
     @AfterEach
-    void tearDown() throws Exception {
+    void tearDown() {
         manager = null;
-        Files.delete(Path.of("test.minidb"));
     }
 
     @Nested

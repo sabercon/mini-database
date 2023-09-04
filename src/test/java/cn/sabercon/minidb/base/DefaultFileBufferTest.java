@@ -1,11 +1,11 @@
 package cn.sabercon.minidb.base;
 
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.lang.foreign.MemorySegment;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static cn.sabercon.minidb.TestUtils.*;
@@ -17,14 +17,13 @@ class DefaultFileBufferTest {
     FileBuffer buffer;
 
     @BeforeEach
-    void setUp() throws Exception {
-        buffer = FileBuffer.from("test.minidb");
+    void setUp(@TempDir Path tempDir) {
+        buffer = FileBuffer.from(tempDir.resolve("test.minidb"));
     }
 
     @AfterEach
-    void tearDown() throws Exception {
+    void tearDown() {
         buffer = null;
-        Files.delete(Path.of("test.minidb"));
     }
 
     @Nested

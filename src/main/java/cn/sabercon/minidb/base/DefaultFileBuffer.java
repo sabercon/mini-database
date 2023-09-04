@@ -7,16 +7,17 @@ import java.io.RandomAccessFile;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SegmentScope;
 import java.nio.channels.FileChannel;
+import java.nio.file.Path;
 
 class DefaultFileBuffer implements FileBuffer {
 
     static final int MIN_BYTE_SIZE = 8 * 1024 * 1024;
 
-    private final String path;
+    private final Path path;
 
     private MemorySegment buffer;
 
-    DefaultFileBuffer(String path) {
+    DefaultFileBuffer(Path path) {
         this.path = path;
         this.buffer = mapFile(path, 0);
     }
@@ -50,8 +51,8 @@ class DefaultFileBuffer implements FileBuffer {
         }
     }
 
-    private static MemorySegment mapFile(String path, long minCap) {
-        try (var raf = new RandomAccessFile(path, "rw")) {
+    private static MemorySegment mapFile(Path path, long minCap) {
+        try (var raf = new RandomAccessFile(path.toFile(), "rw")) {
             var channel = raf.getChannel();
             var size = bufferSize(Math.max(minCap, channel.size()));
             return channel.map(FileChannel.MapMode.READ_WRITE, 0, size, SegmentScope.auto());

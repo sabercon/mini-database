@@ -8,6 +8,7 @@ import cn.sabercon.minidb.util.Pair;
 import cn.sabercon.minidb.util.Triple;
 import com.google.common.base.Preconditions;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,7 +24,7 @@ public class BTree implements KeyValueDatabase {
         this.pageManager = pageManager;
     }
 
-    public static BTree from(String path) {
+    public static BTree from(Path path) {
         var buffer = FileBuffer.from(path);
         return new BTree(PageManager.of(buffer));
     }

@@ -7,7 +7,6 @@ import java.lang.foreign.MemorySegment;
 
 import static cn.sabercon.minidb.page.PageConstants.NULL_POINTER;
 import static cn.sabercon.minidb.page.PageConstants.POINTER_SIZE;
-import static java.lang.foreign.ValueLayout.JAVA_LONG;
 import static java.lang.foreign.ValueLayout.JAVA_LONG_UNALIGNED;
 
 class PageMaster {

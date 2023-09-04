@@ -1,10 +1,11 @@
 package cn.sabercon.minidb.base;
 
 import java.lang.foreign.MemorySegment;
+import java.nio.file.Path;
 
 public interface FileBuffer {
 
-    static FileBuffer from(String path) {
+    static FileBuffer from(Path path) {
         return new DefaultFileBuffer(path);
     }
 
