@@ -4,8 +4,8 @@ import com.google.common.base.Preconditions;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.SegmentScope;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 
@@ -55,7 +55,7 @@ class DefaultFileBuffer implements FileBuffer {
         try (var raf = new RandomAccessFile(path.toFile(), "rw")) {
             var channel = raf.getChannel();
             var size = bufferSize(Math.max(minCap, channel.size()));
-            return channel.map(FileChannel.MapMode.READ_WRITE, 0, size, SegmentScope.auto());
+            return channel.map(FileChannel.MapMode.READ_WRITE, 0, size, Arena.ofAuto());
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }

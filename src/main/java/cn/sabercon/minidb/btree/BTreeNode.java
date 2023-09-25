@@ -104,15 +104,15 @@ class BTreeNode extends Page {
     }
 
     void appendValues(int index, List<Pair<byte[], byte[]>> keyValues) {
-        for (Pair(byte[] k, byte[] v) : keyValues) {
-            appendValue(index, k, v);
+        for (var kv : keyValues) {
+            appendValue(index, kv.first(), kv.second());
             index += 1;
         }
     }
 
     void appendPointers(int index, List<Pair<byte[], Long>> keyPointers) {
-        for (Pair(byte[] k, Long p) : keyPointers) {
-            appendPointer(index, k, p);
+        for (var kv : keyPointers) {
+            appendPointer(index, kv.first(), kv.second());
             index += 1;
         }
     }
