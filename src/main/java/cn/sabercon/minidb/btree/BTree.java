@@ -1,7 +1,7 @@
 package cn.sabercon.minidb.btree;
 
 import cn.sabercon.minidb.base.FileBuffer;
-import cn.sabercon.minidb.base.KeyValueDatabase;
+import cn.sabercon.minidb.base.KeyValueStore;
 import cn.sabercon.minidb.page.PageManager;
 import cn.sabercon.minidb.page.PageType;
 import cn.sabercon.minidb.util.Pair;
@@ -16,7 +16,7 @@ import static cn.sabercon.minidb.btree.BTreeConstants.DEFAULT_ROOT_NODE;
 import static cn.sabercon.minidb.btree.BTreeUtils.*;
 import static cn.sabercon.minidb.page.PageConstants.*;
 
-public class BTree implements KeyValueDatabase {
+public class BTree implements KeyValueStore {
 
     private final PageManager pageManager;
 
@@ -71,7 +71,7 @@ public class BTree implements KeyValueDatabase {
             setRoot(node.getPointer(0));
         } else {
             var nodes = split(node);
-            var newRoot = nodes.size() == 1 ? nodes.get(0) : createRoot(save(nodes));
+            var newRoot = nodes.size() == 1 ? nodes.getFirst() : createRoot(save(nodes));
             setRoot(createNode(newRoot));
         }
     }

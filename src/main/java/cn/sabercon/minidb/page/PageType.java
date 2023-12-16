@@ -22,7 +22,7 @@ public enum PageType {
             case 1 -> BTREE_INTERNAL;
             case 2 -> BTREE_LEAF;
             case 3 -> FREE_LIST;
-            default -> throw new IllegalArgumentException("Unknown node type: " + value);
+            default -> throw new IllegalArgumentException(STR."Unknown node type: \{value}");
         };
     }
 }

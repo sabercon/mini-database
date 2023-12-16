@@ -1,7 +1,7 @@
 package cn.sabercon.minidb.btree;
 
 import cn.sabercon.minidb.TestPageManager;
-import cn.sabercon.minidb.base.KeyValueDatabase;
+import cn.sabercon.minidb.base.KeyValueStore;
 import cn.sabercon.minidb.util.Pair;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class BTreeTest {
 
-    private KeyValueDatabase testBtree() {
+    private KeyValueStore testBtree() {
         return new BTree(new TestPageManager());
     }
 
@@ -115,7 +115,7 @@ class BTreeTest {
             var btree = testBtree();
             var keyMap = Stream.generate(() -> Pair.of(ByteBuffer.wrap(randomBytes()), randomBytes()))
                     .limit(1000)
-                    .collect(Collectors.toMap(Pair::first, Pair::second, (a, b) -> a));
+                    .collect(Collectors.toMap(Pair::first, Pair::second, (a, _) -> a));
 
             keyMap.forEach((key, value) -> btree.upsert(key.array(), value));
 
@@ -131,7 +131,7 @@ class BTreeTest {
             var btree = testBtree();
             var keyMap = Stream.generate(() -> Pair.of(ByteBuffer.wrap(randomBytes(1)), randomBytes(1)))
                     .limit(1000)
-                    .collect(Collectors.toMap(Pair::first, Pair::second, (a, b) -> a));
+                    .collect(Collectors.toMap(Pair::first, Pair::second, (a, _) -> a));
 
             keyMap.forEach((key, value) -> btree.upsert(key.array(), value));
 
@@ -147,7 +147,7 @@ class BTreeTest {
             var btree = testBtree();
             var keyMap = Stream.generate(() -> Pair.of(ByteBuffer.wrap(randomBytes(1000)), randomBytes(3000)))
                     .limit(1000)
-                    .collect(Collectors.toMap(Pair::first, Pair::second, (a, b) -> a));
+                    .collect(Collectors.toMap(Pair::first, Pair::second, (a, _) -> a));
 
             keyMap.forEach((key, value) -> btree.upsert(key.array(), value));
 
@@ -163,9 +163,9 @@ class BTreeTest {
             var btree = testBtree();
             var keyMap = Stream.generate(() -> Pair.of(ByteBuffer.wrap(randomBytes()), randomBytes()))
                     .limit(1000)
-                    .collect(Collectors.toMap(Pair::first, Pair::second, (a, b) -> a));
+                    .collect(Collectors.toMap(Pair::first, Pair::second, (a, _) -> a));
 
-            keyMap.forEach((key, value) -> btree.upsert(key.array(), randomBytes()));
+            keyMap.forEach((key, _) -> btree.upsert(key.array(), randomBytes()));
             keyMap.forEach((key, value) -> btree.upsert(key.array(), value));
 
             keyMap.forEach((key, value) -> {

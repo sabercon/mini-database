@@ -2,7 +2,7 @@ package cn.sabercon.minidb.base;
 
 import java.util.Optional;
 
-public interface KeyValueDatabase {
+public interface KeyValueStore {
 
     Optional<byte[]> find(byte[] key);
 

@@ -147,7 +147,7 @@ final class BTreeUtils {
     }
 
     private static int findSplitIndex(BTreeNode node) {
-        // binary search
+        // Uses binary search
         var lo = 1;
         var hi = node.items() - 1;
         var target = (node.bytes() - HEADER_SIZE + 1) / 2;

@@ -85,7 +85,7 @@ class DefaultPageManagerTest {
             var pageMap = Stream.generate(() -> randomPage())
                     .limit(1000)
                     .map(page -> Pair.of(manager.createPage(page), page))
-                    .collect(Collectors.toMap(Pair::first, Pair::second, (a, b) -> a));
+                    .collect(Collectors.toMap(Pair::first, Pair::second, (a, _) -> a));
 
             pageMap.forEach((pointer, page) -> assertSegmentEquals(page, manager.getPage(pointer)));
             manager.flush();

@@ -88,11 +88,11 @@ class BTreeNode extends Page {
     void appendValue(int index, byte[] key, byte[] val) {
         Objects.checkIndex(index, items());
 
-        // Set offset
+        // Sets offset
         var endOffset = getStartOffset(index) + LENGTH_SIZE + key.length + val.length;
         putInt(offsetPos(index), endOffset);
 
-        // Set key-value pair
+        // Sets key-value pair
         var kvStartPos = kvStartPos(index);
         putInt(kvStartPos, key.length);
         putBytes(kvStartPos + LENGTH_SIZE, key);
@@ -144,12 +144,12 @@ class BTreeNode extends Page {
     }
 
     /**
-     * Note that for the result to be correct the first key must not be greater than the given key.
+     * Note that for the result to be correct, the first key must not be greater than the given key.
      *
      * @return The index of the greatest key that is less than or equal to the given key
      */
     int lookUp(byte[] key) {
-        // binary search
+        // Uses binary search
         var lo = 0;
         var hi = items();
         while (lo < hi - 1) {

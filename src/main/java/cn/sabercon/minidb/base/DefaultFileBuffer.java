@@ -62,7 +62,7 @@ class DefaultFileBuffer implements FileBuffer {
     }
 
     /**
-     * Returns a power of two size for the given target capacity.
+     * Returns a power-of-two size for the given target capacity.
      */
     private static long bufferSize(long cap) {
         if (cap < 2) return cap;
