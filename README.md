@@ -1,6 +1,6 @@
-# MiniDB
+# Mini Database
 
-A mini database built by following [Build Your Own Database From Scratch](https://build-your-own.org/database/).
+A mini database built by following [Build Your Own Database From Scratch in Go](https://build-your-own.org/database/).
 
 ## How it works
 
